@@ -14,48 +14,65 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     <script type="text/javascript">
         (function() {
             var target = 'hk/index.html';
-            // ponytail: timezone is the trusted signal; locale only breaks ties.
-            // Without this flag a genuine HK/Asia match falls through to the
-            // locale step below, where Windows' default en-US ships HK visitors
-            // to the USA site.
-            var matched = false;
+
+            // India, Canada and the USA get their own site; everyone else,
+            // Hong Kong included, lands on HK (head office).
+            // Deliberately timezone-only: a locale check would send a
+            // rest-of-world visitor on a US-English machine to the USA site.
+            var IN = ['asia/kolkata', 'asia/calcutta'];
+
+            var CA = ['america/toronto', 'america/vancouver', 'america/edmonton',
+                'america/winnipeg', 'america/halifax', 'america/st_johns',
+                'america/montreal', 'america/regina', 'america/swift_current',
+                'america/whitehorse', 'america/dawson', 'america/dawson_creek',
+                'america/fort_nelson', 'america/creston', 'america/inuvik',
+                'america/yellowknife', 'america/cambridge_bay', 'america/rankin_inlet',
+                'america/resolute', 'america/iqaluit', 'america/pangnirtung',
+                'america/atikokan', 'america/coral_harbour', 'america/thunder_bay',
+                'america/nipigon', 'america/rainy_river', 'america/moncton',
+                'america/goose_bay', 'america/glace_bay', 'america/blanc-sablon'];
+
+            var US = ['america/new_york', 'america/chicago', 'america/denver',
+                'america/los_angeles', 'america/phoenix', 'america/anchorage',
+                'america/juneau', 'america/sitka', 'america/nome', 'america/adak',
+                'america/yakutat', 'america/metlakatla', 'america/detroit',
+                'america/boise', 'america/menominee', 'america/shiprock',
+                'america/puerto_rico', 'pacific/honolulu', 'pacific/guam',
+                'pacific/pago_pago', 'pacific/saipan'];
+
+            // Whole families of zones, plus the legacy aliases Windows still ships
+            var PREFIX = [
+                ['america/indiana/', 'us/index.html'],
+                ['america/kentucky/', 'us/index.html'],
+                ['america/north_dakota/', 'us/index.html'],
+                ['us/', 'us/index.html'],
+                ['canada/', 'ca/index.html'],
+                ['asia/kolkata', 'in/index.html']
+            ];
 
             try {
-                // 1. Timezone detection (Synchronous & instant 0ms)
+                // Timezone detection (synchronous & instant, 0ms)
                 var tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
                 if (tz) {
                     tz = tz.toLowerCase();
-                    if (tz.includes('calcutta') || tz.includes('kolkata') || tz.includes('india') || tz.includes('colombo') || tz.includes('karachi')) {
+                    if (IN.indexOf(tz) !== -1) {
                         target = 'in/index.html';
-                        matched = true;
-                    } else if (tz.includes('toronto') || tz.includes('vancouver') || tz.includes('edmonton') || tz.includes('winnipeg') || tz.includes('halifax') || tz.includes('st_johns') || tz.includes('montreal')) {
+                    } else if (CA.indexOf(tz) !== -1) {
                         target = 'ca/index.html';
-                        matched = true;
-                    } else if (tz.includes('new_york') || tz.includes('chicago') || tz.includes('denver') || tz.includes('los_angeles') || tz.includes('anchorage') || tz.includes('honolulu') || tz.includes('phoenix') || tz.includes('detroit') || tz.includes('indiana') || tz.includes('boise')) {
+                    } else if (US.indexOf(tz) !== -1) {
                         target = 'us/index.html';
-                        matched = true;
-                    } else if (tz.includes('hong_kong') || tz.includes('shanghai') || tz.includes('taipei') || tz.includes('macau') || tz.includes('singapore')) {
-                        target = 'hk/index.html';
-                        matched = true;
+                    } else {
+                        for (var i = 0; i < PREFIX.length; i++) {
+                            if (tz.indexOf(PREFIX[i][0]) === 0) {
+                                target = PREFIX[i][1];
+                                break;
+                            }
+                        }
                     }
                 }
             } catch(e) {}
 
-            // 2. Locale fallback, only when the timezone told us nothing
-            if (!matched) {
-                try {
-                    var lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
-                    if (lang.includes('-in') || lang === 'hi' || lang === 'gu' || lang === 'mr' || lang === 'ta' || lang === 'te' || lang === 'kn' || lang === 'bn' || lang === 'pa') {
-                        target = 'in/index.html';
-                    } else if (lang.includes('-ca')) {
-                        target = 'ca/index.html';
-                    } else if (lang.includes('-us')) {
-                        target = 'us/index.html';
-                    }
-                } catch(e) {}
-            }
-
-            // 3. Instant client-side redirect (0ms)
+            // Instant client-side redirect (0ms)
             window.location.replace(target);
         })();
     </script>
