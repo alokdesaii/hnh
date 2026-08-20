@@ -95,8 +95,7 @@ Small one-purpose Python helpers, run from the repo root:
 
 | Script | Purpose |
 |---|---|
-| `add_google_analytics.py` | Inject the GA4 tag into page `<head>` |
-| `update_files_ga.py` | Refresh the GA snippet across all regions |
+| `add_gtm.py` | Install the GTM container across all regions |
 | `validate_page.py` | Sanity-check page markup and shared includes |
 | `cleanup_usa.py` | One-off `usa/` → `us/` migration |
 
@@ -109,7 +108,11 @@ Small one-purpose Python helpers, run from the repo root:
 
 ## Analytics
 
-Google Analytics 4 (`G-ZQLC2P562C`) is present on every page.
+**Google Tag Manager (`GTM-NQGPK2N2`) is the only tracking code on the site.** The container snippet is the first element in `<head>` on every page, with the `<noscript>` iframe immediately after `<body>`.
+
+All tags — including Google Analytics — are configured inside GTM by the marketing team, not in this repo. There is deliberately no hardcoded `gtag.js`: running both would double-count pageviews.
+
+If analytics stops reporting, check that the GTM container has been **published** (Submit → Publish) rather than only saved — an unpublished container loads on the site but fires nothing.
 
 ---
 
