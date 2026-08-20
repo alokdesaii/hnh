@@ -66,25 +66,25 @@ def main():
             with open(path, encoding="utf-8") as f:
                 content = original = f.read()
 
+            # Already-tagged pages still need the GA4 strip, so don't skip the
+            # whole file here — only skip re-inserting the container.
             if gtm_id in content:
-                print(f"skip    {folder}/{name} (already has {gtm_id})")
                 skipped += 1
-                continue
+            elif "<head>" in content or "</head>" in content:
+                if "<head>" in content:
+                    content = content.replace("<head>", f"<head>\n{head}", 1)
+                else:
+                    content = content.replace("</head>", f"{head}\n</head>", 1)
 
-            if "<head>" in content:
-                content = content.replace("<head>", f"<head>\n{head}", 1)
-            elif "</head>" in content:
-                content = content.replace("</head>", f"{head}\n</head>", 1)
+                # <body> may carry attributes, so match the whole opening tag
+                m = re.search(r"<body[^>]*>", content, re.IGNORECASE)
+                if m:
+                    content = content[: m.end()] + f"\n{body}" + content[m.end():]
+                else:
+                    print(f"WARN    {folder}/{name}: no <body>, head tag only")
             else:
                 print(f"WARN    {folder}/{name}: no <head>, skipped")
                 continue
-
-            # <body> may carry attributes, so match the whole opening tag
-            m = re.search(r"<body[^>]*>", content, re.IGNORECASE)
-            if m:
-                content = content[: m.end()] + f"\n{body}" + content[m.end():]
-            else:
-                print(f"WARN    {folder}/{name}: no <body>, head tag only")
 
             if drop_ga4:
                 content = strip_ga4(content)
@@ -94,9 +94,11 @@ def main():
                     f.write(content)
                 print(f"ok      {folder}/{name}")
                 changed += 1
+            else:
+                print(f"skip    {folder}/{name} (nothing to do)")
 
-    print(f"\n{changed} updated, {skipped} already tagged"
-          + (", hardcoded GA4 removed" if drop_ga4 else ""))
+    print(f"\n{changed} updated, {skipped} already had {gtm_id}"
+          + (", GA4 stripped where present" if drop_ga4 else ""))
 
 
 def demo():
