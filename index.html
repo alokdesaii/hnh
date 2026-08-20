@@ -16,7 +16,12 @@
     <script type="text/javascript">
         (function() {
             var target = 'hk/index.html';
-            
+            // ponytail: timezone is the trusted signal; locale only breaks ties.
+            // Without this flag a genuine HK/Asia match falls through to the
+            // locale step below, where Windows' default en-US ships HK visitors
+            // to the USA site.
+            var matched = false;
+
             try {
                 // 1. Timezone detection (Synchronous & instant 0ms)
                 var tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
@@ -24,18 +29,22 @@
                     tz = tz.toLowerCase();
                     if (tz.includes('calcutta') || tz.includes('kolkata') || tz.includes('india') || tz.includes('colombo') || tz.includes('karachi')) {
                         target = 'in/index.html';
+                        matched = true;
                     } else if (tz.includes('toronto') || tz.includes('vancouver') || tz.includes('edmonton') || tz.includes('winnipeg') || tz.includes('halifax') || tz.includes('st_johns') || tz.includes('montreal')) {
                         target = 'ca/index.html';
+                        matched = true;
                     } else if (tz.includes('new_york') || tz.includes('chicago') || tz.includes('denver') || tz.includes('los_angeles') || tz.includes('anchorage') || tz.includes('honolulu') || tz.includes('phoenix') || tz.includes('detroit') || tz.includes('indiana') || tz.includes('boise')) {
                         target = 'us/index.html';
+                        matched = true;
                     } else if (tz.includes('hong_kong') || tz.includes('shanghai') || tz.includes('taipei') || tz.includes('macau') || tz.includes('singapore')) {
                         target = 'hk/index.html';
+                        matched = true;
                     }
                 }
             } catch(e) {}
 
-            // 2. Locale fallback if timezone was ambiguous
-            if (target === 'hk/index.html') {
+            // 2. Locale fallback, only when the timezone told us nothing
+            if (!matched) {
                 try {
                     var lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
                     if (lang.includes('-in') || lang === 'hi' || lang === 'gu' || lang === 'mr' || lang === 'ta' || lang === 'te' || lang === 'kn' || lang === 'bn' || lang === 'pa') {
