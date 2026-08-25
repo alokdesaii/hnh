@@ -15,8 +15,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         (function() {
             var target = 'hk/index.html';
 
-            // India, Canada and the USA get their own site; everyone else,
-            // Hong Kong included, lands on HK (head office).
+            // India and Canada get their own site. The USA site serves the
+            // Americas: USA, Mexico, Central America, South America and the
+            // Caribbean. Everyone else, Hong Kong included, lands on HK
+            // (head office).
             // Deliberately timezone-only: a locale check would send a
             // rest-of-world visitor on a US-English machine to the USA site.
             var IN = ['asia/kolkata', 'asia/calcutta'];
@@ -32,20 +34,59 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                 'america/nipigon', 'america/rainy_river', 'america/moncton',
                 'america/goose_bay', 'america/glace_bay', 'america/blanc-sablon'];
 
-            var US = ['america/new_york', 'america/chicago', 'america/denver',
+            // The us/ site covers the whole of the Americas except Canada.
+            var US = [
+                // United States (mainland, Alaska, Hawaii, territories)
+                'america/new_york', 'america/chicago', 'america/denver',
                 'america/los_angeles', 'america/phoenix', 'america/anchorage',
                 'america/juneau', 'america/sitka', 'america/nome', 'america/adak',
-                'america/yakutat', 'america/metlakatla', 'america/detroit',
-                'america/boise', 'america/menominee', 'america/shiprock',
-                'america/puerto_rico', 'pacific/honolulu', 'pacific/guam',
-                'pacific/pago_pago', 'pacific/saipan'];
+                'america/atka', 'america/yakutat', 'america/metlakatla',
+                'america/detroit', 'america/boise', 'america/menominee',
+                'america/shiprock', 'america/puerto_rico', 'america/st_thomas',
+                'america/virgin', 'pacific/honolulu', 'pacific/guam',
+                'pacific/pago_pago', 'pacific/saipan', 'pacific/midway',
+                'pacific/wake', 'pacific/johnston', 'navajo',
+                // Mexico
+                'america/mexico_city', 'america/cancun', 'america/merida',
+                'america/monterrey', 'america/matamoros', 'america/chihuahua',
+                'america/ciudad_juarez', 'america/ojinaga', 'america/mazatlan',
+                'america/bahia_banderas', 'america/hermosillo', 'america/tijuana',
+                'america/ensenada', 'america/santa_isabel',
+                // Central America
+                'america/belize', 'america/costa_rica', 'america/el_salvador',
+                'america/guatemala', 'america/tegucigalpa', 'america/managua',
+                'america/panama',
+                // South America
+                'america/buenos_aires', 'america/cordoba', 'america/rosario',
+                'america/catamarca', 'america/jujuy', 'america/mendoza',
+                'america/la_paz', 'america/sao_paulo', 'america/bahia',
+                'america/fortaleza', 'america/recife', 'america/belem',
+                'america/araguaina', 'america/maceio', 'america/manaus',
+                'america/boa_vista', 'america/porto_velho', 'america/rio_branco',
+                'america/eirunepe', 'america/porto_acre', 'america/cuiaba',
+                'america/campo_grande', 'america/santarem', 'america/noronha',
+                'america/santiago', 'america/punta_arenas', 'pacific/easter',
+                'america/bogota', 'america/guayaquil', 'pacific/galapagos',
+                'america/guyana', 'america/asuncion', 'america/lima',
+                'america/paramaribo', 'america/montevideo', 'america/caracas',
+                // Caribbean
+                'america/antigua', 'america/nassau', 'america/barbados',
+                'america/havana', 'cuba', 'america/dominica',
+                'america/santo_domingo', 'america/grenada',
+                'america/port-au-prince', 'america/jamaica', 'jamaica',
+                'america/st_kitts', 'america/st_lucia', 'america/st_vincent',
+                'america/port_of_spain'];
 
             // Whole families of zones, plus the legacy aliases Windows still ships
             var PREFIX = [
                 ['america/indiana/', 'us/index.html'],
                 ['america/kentucky/', 'us/index.html'],
                 ['america/north_dakota/', 'us/index.html'],
+                ['america/argentina/', 'us/index.html'],
                 ['us/', 'us/index.html'],
+                ['mexico/', 'us/index.html'],
+                ['brazil/', 'us/index.html'],
+                ['chile/', 'us/index.html'],
                 ['canada/', 'ca/index.html'],
                 ['asia/kolkata', 'in/index.html']
             ];
