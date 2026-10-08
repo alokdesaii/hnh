@@ -171,3 +171,150 @@ document.addEventListener("wpcf7mailsent",(e)=>{window.dataLayer=window.dataLaye
 function initStaticContactForm(){/* One API for all four sites. It owns the recipients and the subject line; ProjectCountry tells it which site the enquiry came from. */const CONTACT_API='https://website-api.harbourandhills.com/api/Contactus/ContactNotificationFormHH';const PROJECT_COUNTRY={'Hong Kong':'HH_HK','India':'HH_IN','USA':'HH_US','Canada':'HH_CA'};function getRegionName(){const path=window.location.pathname.toLowerCase();const namespace=(document.querySelector('main[data-barba-namespace]')?.getAttribute('data-barba-namespace')||'').toLowerCase();const title=(document.title||'').toLowerCase();if(path.includes('/us/')||path.includes('/usa/')||namespace==='us'||namespace==='usa'||title.includes('usa')||title.includes('united states'))return 'USA';if(path.includes('/ca/')||namespace==='ca'||title.includes('canada'))return 'Canada';if(path.includes('/in/')||namespace==='in'||title.includes('india'))return 'India';if(path.includes('/hk/')||namespace==='hk'||title.includes('hong kong'))return 'Hong Kong';return 'Global';}const forms=document.querySelectorAll('form.wpcf7-form');forms.forEach(form=>{if(form.dataset.staticFormInit)return;form.dataset.staticFormInit='true';form.addEventListener('submit',async function(e){e.preventDefault();e.stopImmediatePropagation();const submitBtn=form.querySelector('input[type="submit"], button[type="submit"]');let responseOutput=form.querySelector('.wpcf7-response-output');if(!responseOutput){responseOutput=document.createElement('div');responseOutput.className='wpcf7-response-output';form.appendChild(responseOutput);}const nameInput=form.querySelector('input[name="your-name"]');const phoneInput=form.querySelector('input[name="your-phone"]');const emailInput=form.querySelector('input[name="your-email"]');const countryInput=form.querySelector('select[name="country"]');const messageInput=form.querySelector('textarea[name="your-message"]');const name=nameInput?nameInput.value.trim():'';const phone=phoneInput?phoneInput.value.trim():'';const email=emailInput?emailInput.value.trim():'';/* option zero of the country select is a label with a real value, so treat it as "nothing chosen" rather than mailing the placeholder text */const countryPlaceholder=countryInput&&countryInput.options.length?countryInput.options[0].value.trim():'';let country=countryInput?countryInput.value.trim():'';if(country&&country===countryPlaceholder){country='';}const message=messageInput?messageInput.value.trim():'';if(!name||!email||!message||(countryInput&&!country)){form.classList.remove('sent','submitting');form.classList.add('invalid');form.setAttribute('data-status','invalid');responseOutput.style.display='block';responseOutput.style.color='#dc3232';responseOutput.textContent='Please fill in all required fields.';return;}const emailRegex=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;if(!emailRegex.test(email)){form.classList.remove('sent','submitting');form.classList.add('invalid');form.setAttribute('data-status','invalid');responseOutput.style.display='block';responseOutput.style.color='#dc3232';responseOutput.textContent='Please enter a valid email address.';return;}form.classList.remove('invalid','sent');form.classList.add('submitting');form.setAttribute('data-status','submitting');if(submitBtn){submitBtn.disabled=true;submitBtn.setAttribute('data-original-val',submitBtn.value||'Send');submitBtn.value='Sending...';}responseOutput.style.display='none';try{const regionName=getRegionName();/* the API takes its fields as query parameters on a GET; posting, or getting without the parameters, returns 404 because the route only matches when they are present */const payload={Name:name,Email:email,Phone:phone,Country:country,Message:message,ProjectCountry:PROJECT_COUNTRY[regionName]||'HH_HK'};const res=await fetch(CONTACT_API+'?'+new URLSearchParams(payload).toString(),{method:'GET',headers:{'Accept':'application/json'}});let ok=res.ok;if(ok){/* it answers 200 with IsError, so a transport-level 200 alone does not mean delivered */try{const body=await res.clone().json();if(body&&body.IsError===true){ok=false;console.error('Contact form: API reported an error',body);}}catch(e){}}if(!ok){console.error('Contact form: delivery failed, HTTP '+res.status,payload.ProjectCountry);}if(ok){form.reset();form.classList.remove('submitting','invalid');form.classList.add('sent');form.setAttribute('data-status','sent');responseOutput.style.display='block';responseOutput.style.color='#1dbab0';responseOutput.style.fontWeight='bold';responseOutput.style.padding='12px 0';responseOutput.textContent='Thank you for your message. It has been sent successfully.';window.dataLayer=window.dataLayer||[];window.dataLayer.push({event:'generate_lead',form_name:'Contact',region:regionName,user_country:country||'N/A'});}else{throw new Error('Server returned '+res.status);}}catch(err){console.error('Contact form submission error:',err);form.classList.remove('submitting','sent');form.classList.add('failed');form.setAttribute('data-status','failed');responseOutput.style.display='block';responseOutput.style.color='#dc3232';responseOutput.textContent='There was an error trying to send your message. Please try again later.';}finally{if(submitBtn){submitBtn.disabled=false;submitBtn.value=submitBtn.getAttribute('data-original-val')||'Send';}}});});}
 document.addEventListener('DOMContentLoaded',initStaticContactForm);
 initStaticContactForm();
+/* ---------------------------------------------------------------------------
+   Gallery lightbox.
+   Delegated from document so it survives Barba page swaps without re-init, and
+   does nothing on pages with no .js-gallery. Styles are inline because the
+   stylesheet is precompiled and new utility classes would not exist in it.
+   Each tile may carry data-full="..." pointing at a larger file; without it the
+   tile's own src is used.
+--------------------------------------------------------------------------- */
+(function () {
+  if (window.__hhLightbox) return;
+  window.__hhLightbox = true;
+
+  var overlay, figure, imgEl, capEl, countEl, prevBtn, nextBtn, closeBtn;
+  var items = [], index = 0, lastFocus = null;
+
+  function build() {
+    overlay = document.createElement('div');
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-label', 'Image gallery');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:100000;display:none;' +
+      'background:rgba(12,15,25,.96);align-items:center;justify-content:center;' +
+      'opacity:0;transition:opacity .25s cubic-bezier(.85,0,.15,1);';
+
+    figure = document.createElement('figure');
+    figure.style.cssText = 'margin:0;max-width:90vw;max-height:88vh;display:flex;' +
+      'flex-direction:column;gap:12px;align-items:center;';
+
+    imgEl = document.createElement('img');
+    imgEl.style.cssText = 'max-width:90vw;max-height:76vh;object-fit:contain;display:block;';
+    imgEl.alt = '';
+
+    capEl = document.createElement('figcaption');
+    capEl.style.cssText = 'color:#bcbcbc;font-size:14px;line-height:1.5;text-align:center;' +
+      'max-width:70ch;font-family:int,sans-serif;';
+
+    countEl = document.createElement('div');
+    countEl.style.cssText = 'color:#707070;font-size:12px;letter-spacing:.08em;font-family:int,sans-serif;';
+
+    figure.appendChild(imgEl);
+    figure.appendChild(capEl);
+    figure.appendChild(countEl);
+    overlay.appendChild(figure);
+
+    function controlStyle(el, extra) {
+      el.type = 'button';
+      el.style.cssText = 'position:absolute;background:none;border:0;cursor:pointer;' +
+        'color:#fff;font-size:30px;line-height:1;padding:16px;font-family:int,sans-serif;' + extra;
+    }
+    prevBtn = document.createElement('button');
+    prevBtn.innerHTML = '&#8249;';
+    prevBtn.setAttribute('aria-label', 'Previous image');
+    controlStyle(prevBtn, 'left:8px;top:50%;transform:translateY(-50%);');
+
+    nextBtn = document.createElement('button');
+    nextBtn.innerHTML = '&#8250;';
+    nextBtn.setAttribute('aria-label', 'Next image');
+    controlStyle(nextBtn, 'right:8px;top:50%;transform:translateY(-50%);');
+
+    closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&#10005;';
+    closeBtn.setAttribute('aria-label', 'Close gallery');
+    controlStyle(closeBtn, 'right:12px;top:12px;font-size:22px;');
+
+    overlay.appendChild(prevBtn);
+    overlay.appendChild(nextBtn);
+    overlay.appendChild(closeBtn);
+    document.body.appendChild(overlay);
+
+    prevBtn.addEventListener('click', function (e) { e.stopPropagation(); step(-1); });
+    nextBtn.addEventListener('click', function (e) { e.stopPropagation(); step(1); });
+    closeBtn.addEventListener('click', function (e) { e.stopPropagation(); close(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay || e.target === figure) close(); });
+
+    /* swipe */
+    var x0 = null;
+    overlay.addEventListener('touchstart', function (e) { x0 = e.changedTouches[0].clientX; }, { passive: true });
+    overlay.addEventListener('touchend', function (e) {
+      if (x0 === null) return;
+      var dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
+      x0 = null;
+    }, { passive: true });
+  }
+
+  function show(i) {
+    index = (i + items.length) % items.length;
+    var tile = items[index];
+    var fallback = tile.currentSrc || tile.src;
+    imgEl.onerror = function () { imgEl.onerror = null; imgEl.src = fallback; };
+    imgEl.src = tile.getAttribute('data-full') || fallback;
+    imgEl.alt = tile.alt || '';
+    capEl.textContent = tile.alt || '';
+    capEl.style.display = tile.alt ? 'block' : 'none';
+    countEl.textContent = (index + 1) + ' / ' + items.length;
+    var many = items.length > 1;
+    prevBtn.style.display = nextBtn.style.display = many ? 'block' : 'none';
+    countEl.style.display = many ? 'block' : 'none';
+    /* preload the neighbours so stepping feels instant */
+    [items[(index + 1) % items.length], items[(index - 1 + items.length) % items.length]]
+      .forEach(function (t) { if (t) new Image().src = t.getAttribute('data-full') || t.src; });
+  }
+
+  function step(d) { show(index + d); }
+
+  function open(tile) {
+    if (!overlay) build();
+    var gallery = tile.closest('.js-gallery');
+    items = gallery ? Array.prototype.slice.call(gallery.querySelectorAll('img')) : [tile];
+    lastFocus = document.activeElement;
+    show(items.indexOf(tile));
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(function () { overlay.style.opacity = '1'; });
+    closeBtn.focus();
+  }
+
+  function close() {
+    overlay.style.opacity = '0';
+    setTimeout(function () {
+      overlay.style.display = 'none';
+      imgEl.removeAttribute('src');
+      document.body.style.overflow = '';
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }, 250);
+  }
+
+  document.addEventListener('click', function (e) {
+    var tile = e.target.closest && e.target.closest('.js-gallery img');
+    if (tile) { e.preventDefault(); open(tile); }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (!overlay || overlay.style.display !== 'flex') {
+      /* let keyboard users open a focused tile */
+      if ((e.key === 'Enter' || e.key === ' ') && document.activeElement &&
+          document.activeElement.matches && document.activeElement.matches('.js-gallery img')) {
+        e.preventDefault(); open(document.activeElement);
+      }
+      return;
+    }
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowRight') step(1);
+    else if (e.key === 'ArrowLeft') step(-1);
+    else if (e.key === 'Tab') { e.preventDefault(); closeBtn.focus(); }
+  });
+})();
